@@ -139,7 +139,7 @@ func MakeTableRegions(
 	var err error
 	for _, dataFile := range meta.DataFiles {
 		if dataFile.FileMeta.Type == SourceTypeParquet {
-			rowIDMax, region, err := makeParquetFileRegion(meta, dataFile, prevRowIDMax)
+			rowIDMax, region, err := makeParquetFileRegion(ctx, store, meta, dataFile, prevRowIDMax)
 			if err != nil {
 				return nil, err
 			}
@@ -208,10 +208,10 @@ func MakeTableRegions(
 // parquet file are column orient, so the offset is read line number
 func makeParquetFileRegion(
 	ctx context.Context,
+	store storage.ExternalStorage,
 	meta *MDTableMeta,
 	dataFile FileInfo,
 	prevRowIdxMax int64,
-	store storage.ExternalStorage,
 ) (int64, *TableRegion, error) {
 	r, err := store.Open(ctx, dataFile.FileMeta.Path)
 	if err != nil {
