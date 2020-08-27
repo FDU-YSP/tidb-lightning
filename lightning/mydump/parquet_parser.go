@@ -1,9 +1,12 @@
 package mydump
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"reflect"
+
+	"github.com/pingcap/br/pkg/storage"
 
 	"github.com/pingcap/errors"
 	"github.com/pingcap/tidb-lightning/lightning/log"
@@ -30,6 +33,8 @@ type ParquetParser struct {
 
 type ReaderWrapper struct {
 	ReadSeekCloser
+	store storage.ExternalStorage
+	ctx   context.Context
 }
 
 func (r *ReaderWrapper) Write(p []byte) (n int, err error) {
@@ -37,13 +42,53 @@ func (r *ReaderWrapper) Write(p []byte) (n int, err error) {
 }
 
 func (r *ReaderWrapper) Open(name string) (source.ParquetFile, error) {
-	return nil, errors.New("unsupported operation")
+	reader, err := r.store.Open(r.ctx, name)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &ReaderWrapper{
+		ReadSeekCloser: reader,
+		store:          r.store,
+		ctx:            r.ctx,
+	}, nil
 }
 func (r *ReaderWrapper) Create(name string) (source.ParquetFile, error) {
 	return nil, errors.New("unsupported operation")
 }
 
-func NewParquetParser(path string) (*ParquetParser, error) {
+func NewParquetParser(
+	ctx context.Context,
+	store storage.ExternalStorage,
+	r storage.ReadSeekCloser,
+) (*ParquetParser, error) {
+	wrapper := &ReaderWrapper{
+		ReadSeekCloser: r,
+		store:          store,
+		ctx:            ctx,
+	}
+
+	// FIXME: need to bench what the best value for the concurrent reader number
+	reader, err := preader.NewParquetReader(wrapper, nil, 2)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+
+	columns := make([]string, 0, len(reader.Footer.Schema))
+	for i, c := range reader.Footer.Schema {
+		if c.GetNumChildren() == 0 {
+			// the SchemaElement.Name is capitalized, we should use the original name
+			columns = append(columns, reader.SchemaHandler.Infos[i].ExName)
+		}
+	}
+
+	return &ParquetParser{
+		Reader:  reader,
+		columns: columns,
+		logger:  log.L(),
+	}, nil
+}
+
+func NewParquetParser1(path string) (*ParquetParser, error) {
 	r, err := local.NewLocalFileReader(path)
 	if err != nil {
 		return nil, errors.Trace(err)

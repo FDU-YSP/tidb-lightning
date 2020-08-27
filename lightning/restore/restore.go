@@ -1282,8 +1282,7 @@ func newChunkRestore(
 	case mydump.SourceTypeSQL:
 		parser = mydump.NewChunkParser(cfg.TiDB.SQLMode, reader, blockBufSize, ioWorkers)
 	case mydump.SourceTypeParquet:
-		_ = reader.Close()
-		parser, err = mydump.NewParquetParser(chunk.Key.Path)
+		parser, err = mydump.NewParquetParser(ctx, store, reader)
 		if err != nil {
 			return nil, errors.Trace(err)
 		}

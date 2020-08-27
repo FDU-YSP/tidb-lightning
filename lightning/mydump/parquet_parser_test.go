@@ -1,9 +1,12 @@
 package mydump
 
 import (
+	"context"
 	"io"
 	"os"
 	"strconv"
+
+	"github.com/pingcap/br/pkg/storage"
 
 	"github.com/pingcap/tidb/types"
 
@@ -43,7 +46,11 @@ func (s testParquetParserSuite) TestParquetParser(c *C) {
 	c.Assert(writer.WriteStop(), IsNil)
 	c.Assert(pf.Close(), IsNil)
 
-	reader, err := NewParquetParser(name)
+	store, err := storage.NewLocalStorage(".")
+	c.Assert(err, IsNil)
+	r, err := store.Open(context.TODO(), name)
+	c.Assert(err, IsNil)
+	reader, err := NewParquetParser(context.TODO(), store, r)
 	c.Assert(err, IsNil)
 	defer reader.Close()
 
