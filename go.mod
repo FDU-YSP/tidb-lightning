@@ -46,4 +46,4 @@ require (
 	modernc.org/mathutil v1.0.0
 )
 
-replace github.com/pingcap/br => github.com/glorv/br v0.0.0-20200827125748-b16b258c3e64
+replace github.com/pingcap/br => github.com/glorv/br v0.0.0-20200828064201-7581dacb6490
