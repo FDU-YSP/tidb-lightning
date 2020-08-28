@@ -35,6 +35,8 @@ type ReaderWrapper struct {
 	ReadSeekCloser
 	store storage.ExternalStorage
 	ctx   context.Context
+	// current file path
+	path string
 }
 
 func (r *ReaderWrapper) Write(p []byte) (n int, err error) {
@@ -42,6 +44,9 @@ func (r *ReaderWrapper) Write(p []byte) (n int, err error) {
 }
 
 func (r *ReaderWrapper) Open(name string) (source.ParquetFile, error) {
+	if len(name) == 0 {
+		name = r.path
+	}
 	reader, err := r.store.Open(r.ctx, name)
 	if err != nil {
 		return nil, errors.Trace(err)
@@ -50,6 +55,7 @@ func (r *ReaderWrapper) Open(name string) (source.ParquetFile, error) {
 		ReadSeekCloser: reader,
 		store:          r.store,
 		ctx:            r.ctx,
+		path:           name,
 	}, nil
 }
 func (r *ReaderWrapper) Create(name string) (source.ParquetFile, error) {
@@ -60,11 +66,13 @@ func NewParquetParser(
 	ctx context.Context,
 	store storage.ExternalStorage,
 	r storage.ReadSeekCloser,
+	path string,
 ) (*ParquetParser, error) {
 	wrapper := &ReaderWrapper{
 		ReadSeekCloser: r,
 		store:          store,
 		ctx:            ctx,
+		path:           path,
 	}
 
 	// FIXME: need to bench what the best value for the concurrent reader number
@@ -179,6 +187,7 @@ func (pp *ParquetParser) ReadRow() error {
 		pp.readRows += int64(len(pp.rows))
 		pp.curIndex = 0
 	}
+	fmt.Printf("rows len: %d, curIdx: %d, readRows: %d\n", len(pp.rows), pp.curIndex, pp.readRows)
 
 	row := pp.rows[pp.curIndex]
 	pp.curIndex++

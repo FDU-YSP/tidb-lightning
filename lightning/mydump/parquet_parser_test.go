@@ -50,7 +50,7 @@ func (s testParquetParserSuite) TestParquetParser(c *C) {
 	c.Assert(err, IsNil)
 	r, err := store.Open(context.TODO(), name)
 	c.Assert(err, IsNil)
-	reader, err := NewParquetParser(context.TODO(), store, r)
+	reader, err := NewParquetParser(context.TODO(), store, r, name)
 	c.Assert(err, IsNil)
 	defer reader.Close()
 

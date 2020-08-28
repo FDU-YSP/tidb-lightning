@@ -218,7 +218,7 @@ func makeParquetFileRegion(
 		return prevRowIdxMax, nil, errors.Trace(err)
 	}
 
-	pr, err := NewParquetParser(ctx, store, r)
+	pr, err := NewParquetParser(ctx, store, r, dataFile.FileMeta.Path)
 	if err != nil {
 		return prevRowIdxMax, nil, errors.Trace(err)
 	}
