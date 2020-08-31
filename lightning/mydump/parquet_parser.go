@@ -155,6 +155,7 @@ func (pp *ParquetParser) SetPos(pos int64, rowID int64) error {
 }
 
 func (pp *ParquetParser) Close() error {
+	pp.Reader.ReadStop()
 	return pp.Reader.PFile.Close()
 }
 
@@ -187,7 +188,6 @@ func (pp *ParquetParser) ReadRow() error {
 		pp.readRows += int64(len(pp.rows))
 		pp.curIndex = 0
 	}
-	fmt.Printf("rows len: %d, curIdx: %d, readRows: %d\n", len(pp.rows), pp.curIndex, pp.readRows)
 
 	row := pp.rows[pp.curIndex]
 	pp.curIndex++
